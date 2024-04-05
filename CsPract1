@@ -1,0 +1,119 @@
+# Configure password for vty lines
+line vty 0 4
+password vtypa55
+login
+
+#Configure secret password on router
+enable secret enpa55
+
+#Configure ospf on router
+#After this you can send packets from one device to another
+
+#ospf for router 1
+router ospf 1
+network 192.168.1.0 0.0.0.255 area 0
+network 10.1.1.0 0.0.0.3 area 0
+
+#ospf for router 2
+router ospf 1
+network 10.1.1.0 0.0.0.3 area 0
+network 10.2.2.0 0.0.0.3 area 0
+
+#ospf for router 3
+router ospf 1
+network 192.168.3.0 0.0.0.255 area 0
+network 10.2.2.0 0.0.0.3 area 0              #This is the end of part 1 i.e connection establishment of the router and end devices.
+
+#Configure ospf
+#Configure ospf MD5 authentication for all the routers in area 0
+router ospf 1
+area 0 authentication message-digest
+
+#Configure MD5 key for all the routers in area 0
+#MD5-key for R1
+int se0/1/0
+ip ospf message-digest-key 1 md5 MD5pa55
+
+#MD5-key for R2
+int se0/1/0
+ip ospf message-digest-key 1 md5 MD5pa55
+int se0/1/1
+ip ospf message-digest-key 1 md5 MD5pa55
+
+#MD5-key for R3
+int se0/1/0
+ip ospf message-digest-key 1 md5 MD5pa55
+
+#Verify Configuration
+show ip ospf interface                        #This is the end of part 2 i.e Configure ospf 
+#It will provide the output by showing the message digest authentication being enabled and key id = 1. This 
+
+#Configure ntp
+
+#Configure routers as ntp clients.
+ntp server 192.168.1.5
+
+#Configure routers for update hardware clock
+ntp update-calendar
+
+#Configure ntp authentication on the routers
+ntp authenticate 
+ntp trusted-key 1 
+ntp authentication-key 1 md5 ntppa55
+service timestamps log datetime msec
+
+#To get the system's time, which is also the o/p of ntp
+show clock                                     #This is the end of part 3 i.e Configure ntp
+
+#Configure Routers to log messages to the Syslog Server
+
+#Configure the routers to identify remote host (syslog server) that will receive logging message. 
+logging host 192.168.1.6
+
+#Verify logging configuration
+show logging                                   #This is the end of part 4 i.e Configure routers for syslog server.
+
+
+#Configure R3 to support SSH connections
+
+#Configure a domain name
+ip domain-name ccnasecurity.com
+
+#Configure users for login to the SSH server on R3
+username admin privilege 15 secret sshpa55
+
+#Configure the incomming vty lines on R3
+line vty 0 4
+login local 
+transport input ssh
+
+#Erase existing key pairs on R3
+crypto key zeroize rsa
+
+#Generate the rsa encryption key pair for R3
+crypto key generate rsa
+
+#Verify the SSH configuration
+show ip ssh
+
+#Configure SSH timeout and authentication parameters
+ip ssh time-out 120 secs
+ip ssh authentication-retries 2
+ip ssh version 2
+
+#Verify SSH configuration
+show ip ssh                                       
+
+#Attempt to connect to R3 via Telnet from PC-C
+#Write the following command on the cmd of PC-C
+#It will be unsuccessfull
+telnet 192.168.3.1
+
+#Connect to R3 using SSH on PC-C
+#This would be successful
+ssh -l admin 192.168.3.1
+password sshpa55
+
+#Connect to R3 using SSH on R2
+ssh -v2 -l admin 10.2.2.1
+password sshpa55
